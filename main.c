@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <ctype.h>
-#include <sys/dirent.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
@@ -19,7 +18,7 @@
 int count_word_in_buffer(const char *buffer) {
     int count = 0;
     int i;
-    for (i = 0; buffer[i] != "\0" && i < BUFFER_SIZE; i++) {
+    for (i = 0; buffer[i] != EOF && i < BUFFER_SIZE; i++) {
         if (isspace(buffer[i])) count++;
     }
     if (buffer[i] == EOF) count++;
@@ -36,9 +35,10 @@ int count_word_in_file(char *filename) {
     int wordsNum = 0;
     char *buf = malloc(sizeof(char) * BUFFER_SIZE);
     while (!feof(fp)) {
-     int f_read = fread(buf, sizeof(char), BUFFER_SIZE, fp);
+     int f_read = (int) fread(buf, sizeof(char), BUFFER_SIZE, fp);
      wordsNum += count_word_in_buffer(buf);
     }
+    free(buf);
     fclose(fp);
     return wordsNum;
 }
@@ -62,7 +62,7 @@ void ls(const char *dirname, const FileList fileList) {
 char *get_relative_filename(const char *dirname, const char *filename) {
     char *newname = malloc(sizeof(char) * (strlen(dirname) + strlen(filename) + 1));
     strcpy(newname, dirname);
-    strcat(newname, "\\");
+    strcat(newname, "/");
     strcat(newname, filename);
     return newname;
 }
@@ -91,12 +91,15 @@ int main(int argc, char** argv) {
         #pragma omp critical
         {
             node = nextFileListNode(node);
-            fname = node->fname;
+            if (node != NULL)
+                fname = node->fname;
         }
-        char *filename = get_relative_filename(dirname, fname);
-        int count = count_word_in_file(filename);
-        free(filename);
-        printf("%d: %s counts %d words.\n", omp_get_thread_num(), fname, count);
+        if (fname != NULL) {
+            char *filename = get_relative_filename(dirname, fname);
+            int count = count_word_in_file(filename);
+            free(filename);
+            printf("%d: %s counts %d words.\n", omp_get_thread_num(), fname, count);
+        }
     }
 
     destroyFileList(fileList);

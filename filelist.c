@@ -12,11 +12,10 @@ FileList initFileList() {
 void destroyFileList(FileList fileList) {
     if (fileList == NULL) return ;
     FileListNode node = fileList, nextnode = NULL;
-    while ((nextnode = nextFileListNode(fileList)) != NULL) {
+    while ((nextnode = nextFileListNode(node)) != NULL) {
         free(node);
         node = nextnode;
     }
-    free(node);
 }
 
 void addFileTo(FileList fileList, char *fname) {
